@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Builder Trades - MEV Boost Relay Monitoring</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px 0;
+        }
+        .dashboard-container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            transition: transform 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .header-card {
+            background: white;
+            margin-bottom: 30px;
+        }
+        .table-card {
+            background: white;
+        }
+        .address-link {
+            font-family: monospace;
+            font-size: 0.85em;
+            color: #667eea;
+            text-decoration: none;
+        }
+        .address-link:hover {
+            text-decoration: underline;
+        }
+        .tx-hash {
+            font-family: monospace;
+            font-size: 0.9em;
+            color: #667eea;
+        }
+        .trade-card {
+            border-left: 4px solid #667eea;
+            margin-bottom: 15px;
+        }
+        .buy-section {
+            background-color: #d4edda;
+            border-radius: 8px;
+            padding: 10px;
+            margin: 5px 0;
+        }
+        .sell-section {
+            background-color: #f8d7da;
+            border-radius: 8px;
+            padding: 10px;
+            margin: 5px 0;
+        }
+        .balance-change-section {
+            background-color: #e7f3ff;
+            border-radius: 8px;
+            padding: 10px;
+            margin: 5px 0;
+        }
+        .badge-custom {
+            padding: 0.5em 0.75em;
+            font-size: 0.85em;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="header-card card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="mb-2">
+                            <i class="fas fa-user-circle"></i> Builder Trades
+                        </h2>
+                        <p class="lead text-muted mb-0">
+                            <a href="/" class="text-decoration-none">
+                                <i class="fas fa-arrow-left"></i> Back to Dashboard
+                            </a>
+                        </p>
+                    </div>
+                    <div class="text-end">
+                        <h5 class="mb-1">Builder Address</h5>
+                        <a href="https://etherscan.io/address/{{ builder_address }}" target="_blank" class="address-link">
+                            {{ builder_address[:10] }}...{{ builder_address[-8:] }}
+                            <i class="fas fa-external-link-alt"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card table-card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-list"></i> Individual Trades ({{ trades|length }} total)
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if trades %}
+                    {% for trade in trades %}
+                    <div class="card trade-card">
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <h6 class="mb-2">
+                                        <i class="fas fa-hashtag"></i> Transaction Hash
+                                    </h6>
+                                    <a href="https://etherscan.io/tx/{{ trade.tx_hash }}" target="_blank" class="tx-hash">
+                                        {{ trade.tx_hash[:20] }}...{{ trade.tx_hash[-10:] }}
+                                        <i class="fas fa-external-link-alt"></i>
+                                    </a>
+                                </div>
+                                <div class="col-md-3">
+                                    <h6 class="mb-2">
+                                        <i class="fas fa-cube"></i> Block
+                                    </h6>
+                                    <span class="badge bg-info">{{ trade.block_number }}</span>
+                                </div>
+                                <div class="col-md-3">
+                                    <h6 class="mb-2">
+                                        <i class="fas fa-clock"></i> Time
+                                    </h6>
+                                    <span class="badge bg-secondary">{{ trade.block_time }}</span>
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="buy-section">
+                                        <h6 class="mb-2">
+                                            <i class="fas fa-arrow-down text-success"></i> Buy Details
+                                        </h6>
+                                        <div class="small">
+                                            <div><strong>Amount:</strong> {{ "%.6f"|format(trade.buy.amount|float) }}{% if trade.buy.currency_symbol %} {{ trade.buy.currency_symbol }}{% endif %}</div>
+                                            <div><strong>Amount (USD):</strong> ${{ "%.2f"|format(trade.buy.amount_usd|float) }}</div>
+                                            <div><strong>Currency:</strong> {{ trade.buy.currency_name }}{% if trade.buy.currency_symbol %} ({{ trade.buy.currency_symbol }}){% endif %}</div>
+                                            {% if trade.buy.currency_address %}
+                                            <div>
+                                                <strong>Token Address:</strong>
+                                                <a href="https://etherscan.io/address/{{ trade.buy.currency_address }}" target="_blank" class="address-link">
+                                                    {{ trade.buy.currency_address[:10] }}...{{ trade.buy.currency_address[-8:] }}
+                                                </a>
+                                            </div>
+                                            {% endif %}
+                                            <div><strong>Price:</strong> {{ "%.6f"|format(trade.buy.price|float) }}</div>
+                                            <div><strong>Price (USD):</strong> ${{ "%.2f"|format(trade.buy.price_usd|float) }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="sell-section">
+                                        <h6 class="mb-2">
+                                            <i class="fas fa-arrow-up text-danger"></i> Sell Details
+                                        </h6>
+                                        <div class="small">
+                                            <div><strong>Amount:</strong> {{ "%.6f"|format(trade.sell.amount|float) }}{% if trade.sell.currency_symbol %} {{ trade.sell.currency_symbol }}{% endif %}</div>
+                                            <div><strong>Amount (USD):</strong> ${{ "%.2f"|format(trade.sell.amount_usd|float) }}</div>
+                                            <div><strong>Currency:</strong> {{ trade.sell.currency_name }}{% if trade.sell.currency_symbol %} ({{ trade.sell.currency_symbol }}){% endif %}</div>
+                                            {% if trade.sell.currency_address %}
+                                            <div>
+                                                <strong>Token Address:</strong>
+                                                <a href="https://etherscan.io/address/{{ trade.sell.currency_address }}" target="_blank" class="address-link">
+                                                    {{ trade.sell.currency_address[:10] }}...{{ trade.sell.currency_address[-8:] }}
+                                                </a>
+                                            </div>
+                                            {% endif %}
+                                            <div><strong>Price:</strong> {{ "%.6f"|format(trade.sell.price|float) }}</div>
+                                            <div><strong>Price (USD):</strong> ${{ "%.2f"|format(trade.sell.price_usd|float) }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {% if trade.balance_changes %}
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="balance-change-section">
+                                        <h6 class="mb-2">
+                                            <i class="fas fa-wallet"></i> Builder Balance Changes
+                                        </h6>
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-bordered mb-0">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Token</th>
+                                                        <th>Pre Balance</th>
+                                                        <th>Post Balance</th>
+                                                        <th>Balance Change</th>
+                                                        <th>Profit (USD)</th>
+                                                        <th>Reason Code</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for balance in trade.balance_changes %}
+                                                    <tr>
+                                                        <td>
+                                                            <strong>{{ balance.currency_name }}</strong>
+                                                            {% if balance.currency_symbol %}
+                                                            <br><small class="text-muted">({{ balance.currency_symbol }})</small>
+                                                            {% endif %}
+                                                            {% if balance.currency_address %}
+                                                            <br>
+                                                            <a href="https://etherscan.io/address/{{ balance.currency_address }}" target="_blank" class="address-link" style="font-size: 0.7em;">
+                                                                {{ balance.currency_address[:10] }}...{{ balance.currency_address[-8:] }}
+                                                            </a>
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>{{ "%.6f"|format(balance.pre_balance) }}</td>
+                                                        <td>{{ "%.6f"|format(balance.post_balance) }}</td>
+                                                        <td>
+                                                            <span class="badge {% if balance.balance_change > 0 %}bg-success{% elif balance.balance_change < 0 %}bg-danger{% else %}bg-secondary{% endif %}">
+                                                                {{ "%.6f"|format(balance.balance_change) }}
+                                                            </span>
+                                                        </td>
+                                                        <td>
+                                                            <span class="badge {% if balance.profit_usd > 0 %}bg-success{% elif balance.profit_usd < 0 %}bg-danger{% else %}bg-secondary{% endif %}">
+                                                                ${{ "%.2f"|format(balance.profit_usd) }}
+                                                            </span>
+                                                        </td>
+                                                        <td>
+                                                            <span class="badge bg-info">{{ balance.reason_code }}</span>
+                                                        </td>
+                                                    </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <div class="row mt-2">
+                                <div class="col-md-12">
+                                    <span class="badge bg-secondary">
+                                        <i class="fas fa-exchange-alt"></i> DEX Protocol: {{ trade.dex_protocol }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted text-center py-5">
+                        <i class="fas fa-inbox fa-3x mb-3"></i><br>
+                        No trades found for this builder.
+                    </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+
