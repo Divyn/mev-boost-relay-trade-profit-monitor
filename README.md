@@ -1,5 +1,5 @@
 # MEV Relayers Profit Monitor
-This is a dashboard that pulls live MEV-Boost builder income on trades executed via a private mempool from the Bitquery [MEV Balance Tracker API](https://docs.bitquery.io/docs/blockchain/Ethereum/balances/transaction-balance-tracker/eth-mev-balance-tracker/), aggregates per-builder statistics, and offers drill-down views of every trade.
+This is a dashboard that pulls live MEV-Boost builder income on trades executed via a private mempool from the Bitquery [MEV Balance Tracker API](https://docs.bitquery.io/docs/blockchain/Ethereum/balances/transaction-balance-tracker/eth-mev-balance-tracker/?utm_source=github&utm_medium=refferal&utm_campaign=mev_dashboard), aggregates per-builder statistics, and offers drill-down views of every trade.
 
 ## Final Output
 ![](/mev1.png)
